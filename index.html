@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced To-Do List</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            width: 300px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        input {
+            padding: 10px;
+            margin-bottom: 10px;
+            width: 70%;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 0 5px;
+            cursor: pointer;
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            background-color: #fff;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .open,
+        .delete {
+            color: #e74c3c;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        #fileInput {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>To-Do List</h1>
+        <input type="text" id="taskInput" placeholder="Add a new task">
+        <button onclick="addTask()">Add Task</button>
+        <button onclick="saveTasks()">Save Tasks</button>
+        <label for="fileInput">Select File:</label>
+        <input type="file" id="fileInput" accept=".json" onchange="loadTasks()">
+        <button onclick="saveTaskToFile()">Save Task to File</button>
+        <ul id="taskList"></ul>
+    </div>
+
+    <!-- Add an anchor tag for navigation -->
+    <a id="openSection" style="display: none;"></a>
+
+    <script>
+        // Function to add a task to the list
+        function addTask() {
+            var taskInput = document.getElementById('taskInput');
+            var taskList = document.getElementById('taskList');
+
+            if (taskInput.value.trim() !== '') {
+                var li = document.createElement('li');
+                var taskText = taskInput.value.trim();
+                li.innerHTML = taskText +
+                    '<span class="open" onclick="openTask(\'' + taskText + '\')">Open</span>' +
+                    '<span class="delete" onclick="removeTask(this)">Delete</span>';
+                taskList.appendChild(li);
+                taskInput.value = '';
+            }
+        }
+
+        // Function to remove a task from the list
+        function removeTask(spanElement) {
+            var li = spanElement.parentElement;
+            li.remove();
+        }
+
+        // Function to open a task and navigate to the openSection
+        function openTask(taskText) {
+            alert('Task Details:\n' + taskText);
+            // Navigate to the openSection
+            location.href = '#openSection';
+        }
+
+        // Function to save tasks to local storage
+        function saveTasks() {
+            var taskList = document.getElementById('taskList');
+            var tasks = [];
+
+            // Iterate through each task in the list
+            taskList.querySelectorAll('li').forEach(function(li) {
+                var taskText = li.textContent.trim();
+                tasks.push(taskText.substring(0, taskText.length - 12)); // Remove 'OpenDelete' from task text
+            });
+
+            // Save tasks to local storage as JSON
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            alert('Tasks saved successfully!');
+        }
+
+        // Function to load tasks from a file
+        function loadTasks() {
+            var fileInput = document.getElementById('fileInput');
+            var file = fileInput.files[0];
+
+            if (file) {
+                var reader = new FileReader();
+
+                reader.onload = function(e) {
+                    var tasks = JSON.parse(e.target.result);
+                    displayTasks(tasks);
+                };
+
+                reader.readAsText(file);
+            }
+        }
+
+        // Function to display tasks on the page
+        function displayTasks(tasks) {
+            var taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+
+            tasks.forEach(function(task) {
+                var li = document.createElement('li');
+                li.innerHTML = task +
+                    '<span class="open" onclick="openTask(\'' + task + '\')">Open</span>' +
+                    '<span class="delete" onclick="removeTask(this)">Delete</span>';
+                taskList.appendChild(li);
+            });
+
+            alert('Tasks loaded successfully!');
+        }
+
+        // Function to save a task to a file using File System Access API
+        async function saveTaskToFile() {
+            try {
+                // Request access to the user's file system
+                const directoryHandle = await window.showDirectoryPicker();
+
+                // Create a file handle within the selected directory
+                const fileHandle = await directoryHandle.getFileHandle('task.txt', {
+                    create: true
+                });
+
+                // Create a writable stream to the file
+                const writable = await fileHandle.createWritable();
+
+                // Write the task to the file
+                const taskText = prompt('Enter the task to save:');
+                await writable.write(taskText);
+
+                // Close the file
+                await writable.close();
+
+                alert('Task saved to file successfully!');
+            } catch (error) {
+                console.error('Error saving task to file:', error);
+                alert('Error saving task to file. Check the console for details.');
+            }
+        }
+
+        // Load tasks from local storage when the page loads
+        window.onload = function() {
+            var savedTasks = localStorage.getItem('tasks');
+
+            if (savedTasks) {
+                displayTasks(JSON.parse(savedTasks));
+            }
+        };
+    </script>
+</body>
+
+</html>
